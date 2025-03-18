@@ -45,15 +45,17 @@ const buildDownloadBinaryUrl = (version) => {
     if (os.arch() === "arm64") {
         arch = "-arm64"
     }
+    console.log(`Downloading SimpleLocalize CLI ${version} for ${platform}${arch}...`);
     return `https://github.com/simplelocalize/simplelocalize-cli/releases/download/${version}/simplelocalize-cli-${platform}${arch}`
 }
 
-async function installBinary(version = "2.8.0") {
-    const downloadUrl = buildDownloadBinaryUrl(version);
+async function installBinary() {
+    const cliVersion = "2.8.0";
+    const downloadUrl = buildDownloadBinaryUrl(cliVersion);
     if (!fs.existsSync(path.join(__dirname, 'bin'))) {
         fs.mkdirSync(path.join(__dirname, 'bin'));
     }
-    console.log(`Downloading ${downloadUrl}...`);
+
     const response = await axios({
         url: downloadUrl,
         method: 'GET',
@@ -77,6 +79,15 @@ async function installBinary(version = "2.8.0") {
     console.log('Binary is now executable.');
 }
 
+const linkToNodeModulesBin = () => {
+    const nodeModulesBinPath = path.join(__dirname, '..', '..', '.bin', 'simplelocalize');
+    if (fs.existsSync(nodeModulesBinPath)) {
+        fs.unlinkSync(nodeModulesBinPath);
+    }
+    fs.symlinkSync(binaryPath, nodeModulesBinPath);
+    console.log('Link to node_modules/.bin created.');
+}
+
 const init = async () => {
     console.log("Checking if SimpleLocalize CLI is installed...");
     if (!isBinaryInstalled()) {
@@ -91,7 +102,8 @@ const init = async () => {
         console.log("SimpleLocalize CLI already installed.");
     }
     printBinaryVersion();
+    linkToNodeModulesBin();
     process.exit(0);
 }
 
-await init();
+init();
