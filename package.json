@@ -1,0 +1,17 @@
+{
+  "name": "simplelocalize",
+  "version": "1.0.0",
+  "description": "SimpleLocalize CLI for NPM",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "bin": {
+    "simplelocalize": "./index.js"
+  },
+  "dependencies": {
+    "axios": "^1.8.3"
+  },
+  "author": "Jakub Pomykała",
+  "license": "MIT"
+}

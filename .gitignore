@@ -1,0 +1,76 @@
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+extraction.json
+
+test
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/nbdist/
+/.nb-gradle/
+/build/
+
+simplelocalize-dev.properties
+simplelocalize-dev.yml
+simplelocalize-dev.yaml
+simplelocalize*.jar
+*ITE.java
+
+io.simplelocalize.cli.simplelocalizeclicommand
+simplelocalize-cli
+
+.*bgv
+
+### macOS ###
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+/simplelocalize-sample.yml
+/dependency-reduced-pom.xml
+/build-far-jar.sh
+/build-quick.sh
+/build-production.sh
+/build-m1.sh
+/install.sh
+/install-locally.sh
+/simplelocalize-init-command.yml
