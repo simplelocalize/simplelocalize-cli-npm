@@ -5,7 +5,10 @@ const fs = require('fs');
 const axios = require('axios');
 const os = require('os');
 
-const binaryPath = path.join(__dirname, 'bin', 'simplelocalize');
+let binaryPath = path.join(__dirname, 'bin', 'simplelocalize');
+if (os.platform() === 'win32') {
+    binaryPath += '.exe';
+}
 
 const isBinaryInstalled = () => {
     try {
@@ -69,18 +72,20 @@ async function installBinary() {
         writer.on('error', reject);
     });
 
-    console.log('SimpleLocalize CLI downloaded successfully!');
-
     // Make it executable (only on Unix-based systems)
     if (os.platform() !== 'win32') {
+        console.log('Making binary executable...');
         fs.chmodSync(binaryPath, 0o755);
     }
-
-    console.log('Binary is now executable.');
 }
 
 const linkToNodeModulesBin = () => {
-    const nodeModulesBinPath = path.join(__dirname, '..', '..', '.bin', 'simplelocalize');
+    let nodeModulesBinPath = path.join(__dirname, '..', '..', '.bin', 'simplelocalize');
+    
+    if (os.platform() === 'win32') {
+        nodeModulesBinPath += '.exe';
+    }
+
     if (fs.existsSync(nodeModulesBinPath)) {
         fs.unlinkSync(nodeModulesBinPath);
     }
