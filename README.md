@@ -33,7 +33,7 @@ Package SimpleLocalize CLI in your project and makes it available in `package.js
     "start": "react-scripts start",
     "sl:download": "simplelocalize downlaod",
     "sl:upload": "simplelocalize upload",
-    "sl:autotranslate": "simplelocalize autotranslate"
+    "sl:autotranslate": "simplelocalize auto-translate"
   },
 }
 ```

@@ -1,6 +1,6 @@
 {
   "name": "@simplelocalize/cli",
-  "version": "1.0.8",
+  "version": "2.9.0",
   "description": "SimpleLocalize CLI for NPM",
   "main": "index.cjs",
   "type": "module",

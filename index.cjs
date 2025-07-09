@@ -53,7 +53,7 @@ const buildDownloadBinaryUrl = (version) => {
 }
 
 async function installBinary() {
-    const cliVersion = "2.8.0";
+    const cliVersion = require('./package.json').version;
     const downloadUrl = buildDownloadBinaryUrl(cliVersion);
     if (!fs.existsSync(path.join(__dirname, 'bin'))) {
         fs.mkdirSync(path.join(__dirname, 'bin'));
@@ -84,6 +84,12 @@ const linkToNodeModulesBin = () => {
     
     if (os.platform() === 'win32') {
         nodeModulesBinPath += '.exe';
+    }
+
+    // Ensure the .bin directory exists
+    const binDir = path.dirname(nodeModulesBinPath);
+    if (!fs.existsSync(binDir)) {
+        fs.mkdirSync(binDir, { recursive: true });
     }
 
     if (fs.existsSync(nodeModulesBinPath)) {
