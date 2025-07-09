@@ -1,11 +1,10 @@
 {
   "name": "@simplelocalize/cli",
-  "version": "2.9.0",
+  "version": "2.9.0-r1",
   "description": "SimpleLocalize CLI for NPM",
   "main": "index.cjs",
   "type": "module",
   "scripts": {
-    "start": "node index.cjs",
     "postinstall": "node index.cjs install"
   },
   "repository": {
@@ -13,8 +12,7 @@
     "url": "https://github.com/simplelocalize/simplelicalize-cli-npm.git"
   },
   "bin": {
-    "install": "index.cjs",
-    "simplelocalize": "bin/simplelocalize"
+    "simplelocalize": "index.cjs"
   },
   "dependencies": {
     "axios": "^1.8.3"

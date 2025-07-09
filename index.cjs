@@ -10,10 +10,16 @@ if (os.platform() === 'win32') {
     binaryPath += '.exe';
 }
 
+const getExpectedCliVersion = () => {
+    const packageVersion = require('./package.json').version;
+    return packageVersion.split('+')[0];
+};
+
 const isBinaryInstalled = () => {
     try {
-        execSync(binaryPath + ' --version', { stdio: 'ignore' });
-        return true;
+        const output = execSync(binaryPath + ' --version').toString().trim();
+        const expectedVersion = getExpectedCliVersion();
+        return output.includes(expectedVersion);
     }
     catch (error) {
         return false;
@@ -49,11 +55,12 @@ const buildDownloadBinaryUrl = (version) => {
         arch = "-arm64"
     }
     console.log(`Downloading SimpleLocalize CLI ${version} for ${platform}${arch}...`);
-    return `https://github.com/simplelocalize/simplelocalize-cli/releases/download/${version}/simplelocalize-cli-${platform}${arch}`
+    return `https://get.simplelocalize.io/binaries/${version}/simplelocalize-cli-${platform}${arch}`
 }
 
 async function installBinary() {
-    const cliVersion = require('./package.json').version;
+    const packageVersion = require('./package.json').version;
+    const cliVersion = packageVersion.split('-')[0];
     const downloadUrl = buildDownloadBinaryUrl(cliVersion);
     if (!fs.existsSync(path.join(__dirname, 'bin'))) {
         fs.mkdirSync(path.join(__dirname, 'bin'));
@@ -117,4 +124,27 @@ const init = async () => {
     process.exit(0);
 }
 
-init();
+// Only run install logic if called with 'install' argument (for postinstall)
+if (process.argv[2] === 'install') {
+    (async () => {
+        await init();
+    })();
+} else {
+    // Forward all other CLI commands to the downloaded binary
+    if (!isBinaryInstalled()) {
+        console.error('SimpleLocalize CLI binary is not installed. Please run: npm install');
+        process.exit(1);
+    }
+    // Build the command to forward
+    const args = process.argv.slice(2).map(arg => {
+        // Quote arguments with spaces for safety
+        if (/\s/.test(arg)) return `"${arg}"`;
+        return arg;
+    }).join(' ');
+    try {
+        execSync(`${binaryPath} ${args}`, { stdio: 'inherit' });
+        process.exit(0);
+    } catch (error) {
+        process.exit(error.status || 1);
+    }
+}
