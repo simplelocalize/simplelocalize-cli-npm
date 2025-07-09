@@ -7,7 +7,7 @@ in their workflows.
 ## Installation
 
 ```
-npm install @simplelocalize/cli@2.9.0-r1
+npm install @simplelocalize/cli@2.9.1
 ```
 
 After installing the package, it should automatically choose the right binary for 
@@ -25,7 +25,7 @@ Package SimpleLocalize CLI in your project and makes it available in `package.js
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@simplelocalize/cli": "^2.9.0-r1",
+    "@simplelocalize/cli": "^2.9.1",
   },
   "scripts": {
     "start": "react-scripts start",
@@ -45,8 +45,8 @@ Learn more about [SimpleLocalize CLI commands](https://github.com/simplelocalize
 `@simplelocalize/cli@{CLI_VERSION}-release.{NPM_VERSION}` is the versioning scheme used in this package.
 Where `CLI_VERSION` is the version of SimpleLocalize CLI and `NPM_VERSION` is the version of this npm package.
 
-`@simplelocalize/cli@2.9.0-r1` will install SimpleLocalize CLI 2.9.0 and this npm package version is 1.
-`@simplelocalize/cli@2.9.0-r2` will install SimpleLocalize CLI 2.9.0 and this npm package version is 2.
+`@simplelocalize/cli@2.9.1` will install SimpleLocalize CLI 2.9.x and this npm package version is 1.
+`@simplelocalize/cli@2.9.1` will install SimpleLocalize CLI 2.9.x and this npm package version is 2.
 
 By using this versioning scheme, we can release new versions of this npm package
 without changing the SimpleLocalize CLI version, for example, to fix bugs in this package.

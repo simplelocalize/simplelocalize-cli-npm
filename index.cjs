@@ -12,7 +12,8 @@ if (os.platform() === 'win32') {
 
 const getExpectedCliVersion = () => {
     const packageVersion = require('./package.json').version;
-    return packageVersion.split('+')[0];
+    const parts = packageVersion.split('.');
+    return parts[0] + '.' + parts[1] + '.0';
 };
 
 const isBinaryInstalled = () => {
@@ -60,7 +61,7 @@ const buildDownloadBinaryUrl = (version) => {
 
 async function installBinary() {
     const packageVersion = require('./package.json').version;
-    const cliVersion = packageVersion.split('-')[0];
+    const cliVersion = getExpectedCliVersion
     const downloadUrl = buildDownloadBinaryUrl(cliVersion);
     if (!fs.existsSync(path.join(__dirname, 'bin'))) {
         fs.mkdirSync(path.join(__dirname, 'bin'));
@@ -83,6 +84,11 @@ async function installBinary() {
     if (os.platform() !== 'win32') {
         console.log('Making binary executable...');
         fs.chmodSync(binaryPath, 0o755);
+    }
+
+    // Ensure binary exists and is executable before continuing
+    if (!fs.existsSync(binaryPath)) {
+        throw new Error('Binary file was not created!');
     }
 }
 
