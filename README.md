@@ -7,7 +7,7 @@ in their workflows.
 ## Installation
 
 ```
-npm install @simplelocalize/cli@1.0.8
+npm install @simplelocalize/cli@2.9.0
 ```
 
 After installing the package, it should automatically choose the right binary for 
@@ -27,11 +27,11 @@ Package SimpleLocalize CLI in your project and makes it available in `package.js
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@simplelocalize/cli": "^1.0.8",
+    "@simplelocalize/cli": "^2.9.0",
   },
   "scripts": {
     "start": "react-scripts start",
-    "sl:download": "simplelocalize downlaod",
+    "sl:download": "simplelocalize download",
     "sl:upload": "simplelocalize upload",
     "sl:autotranslate": "simplelocalize auto-translate"
   },
@@ -39,3 +39,8 @@ Package SimpleLocalize CLI in your project and makes it available in `package.js
 ```
 
 Learn more about [SimpleLocalize CLI commands](https://github.com/simplelocalize/simplelocalize-cli)
+
+## Versioning
+
+`@simplelocalize/cli` versioning is synced with https://github.com/simplelocalize/simplelocalize-cli versioning.
+That means `@simplelocalize/cli@2.9.0` will install SimpleLocalize CLI 2.9.0.
