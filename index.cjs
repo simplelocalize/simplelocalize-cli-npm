@@ -60,25 +60,33 @@ const buildDownloadBinaryUrl = (version) => {
 }
 
 async function installBinary() {
-    const packageVersion = require('./package.json').version;
-    const cliVersion = getExpectedCliVersion
+    const cliVersion = getExpectedCliVersion();
+    if (fs.existsSync(binaryPath)) {
+        console.log('Removing existing binary...');
+        fs.unlinkSync(binaryPath);
+    }
     const downloadUrl = buildDownloadBinaryUrl(cliVersion);
     if (!fs.existsSync(path.join(__dirname, 'bin'))) {
         fs.mkdirSync(path.join(__dirname, 'bin'));
     }
 
-    const response = await axios({
-        url: downloadUrl,
-        method: 'GET',
-        responseType: 'stream'
-    });
+    try {
+        const response = await axios({
+            url: downloadUrl,
+            method: 'GET',
+            responseType: 'stream'
+        });
 
-    const writer = fs.createWriteStream(binaryPath);
-    response.data.pipe(writer);
-    await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
-    });
+        const writer = fs.createWriteStream(binaryPath);
+        response.data.pipe(writer);
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+        });
+    } catch (error) {
+        console.error('Error downloading SimpleLocalize CLI binary:', error.message);
+        process.exit(1);
+    }
 
     // Make it executable (only on Unix-based systems)
     if (os.platform() !== 'win32') {
@@ -94,7 +102,7 @@ async function installBinary() {
 
 const linkToNodeModulesBin = () => {
     let nodeModulesBinPath = path.join(__dirname, '..', '..', '.bin', 'simplelocalize');
-    
+
     if (os.platform() === 'win32') {
         nodeModulesBinPath += '.exe';
     }
