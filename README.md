@@ -20,7 +20,7 @@ scripts in `package.json`.
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@simplelocalize/cli": "^2.9.2",
+    "@simplelocalize/cli": "^2.10.0",
   },
   "scripts": {
     "start": "react-scripts start",
@@ -48,7 +48,7 @@ npx @simplelocalize/cli download
 `@simplelocalize/cli` versioning is synced with https://github.com/simplelocalize/simplelocalize-cli versioning.
 
 `@simplelocalize/cli@2.9.1` will install SimpleLocalize CLI 2.9.x and this npm package version is 1.
-`@simplelocalize/cli@2.9.1` will install SimpleLocalize CLI 2.9.x and this npm package version is 2.
+`@simplelocalize/cli@2.9.2` will install SimpleLocalize CLI 2.9.x and this npm package version is 2.
 
 By using this versioning scheme, we can release new versions of this npm package
 without changing the SimpleLocalize CLI version, for example, to fix bugs in this package,
