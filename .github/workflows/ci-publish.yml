@@ -14,22 +14,37 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
       - run: npm ci
+      - run: node index.cjs --version
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
     runs-on: ubuntu-latest
+    # npm Trusted Publishing (OIDC): no NPM_TOKEN, so account 2FA (EOTP) does not apply
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org/'
-      - run: npm ci
-      - run: npm run build --if-present
-      - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # Trusted Publishing requires npm >= 11.5.1
+      - run: npm install -g npm@latest
+      - run: npm ci --ignore-scripts
+      - name: Check if version is already published
+        id: check
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@simplelocalize/cli@$VERSION" version >/dev/null 2>&1; then
+            echo "Version $VERSION is already published, skipping"
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.check.outputs.publish == 'true'
+        run: npm publish --access public
