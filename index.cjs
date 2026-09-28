@@ -1,164 +1,159 @@
 #!/usr/bin/env node
-const { execSync } = require("child_process");
+const { spawnSync } = require("child_process");
 const path = require("path");
 const fs = require('fs');
 const axios = require('axios');
 const os = require('os');
 
-let binaryPath = path.join(__dirname, 'bin', 'simplelocalize');
-if (os.platform() === 'win32') {
-    binaryPath += '.exe';
-}
+const VERSION_PATTERN = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
 
-const getExpectedCliVersion = () => {
-    const packageVersion = require('./package.json').version;
-    const parts = packageVersion.split('.');
-    return parts[0] + '.' + parts[1] + '.0';
+const isValidVersion = (version) => typeof version === 'string' && VERSION_PATTERN.test(version);
+
+// Walks up from the project directory and returns the first "simplelocalize.cliVersion" found in package.json.
+const findPinnedVersion = (startDir) => {
+    let dir = path.resolve(startDir);
+    while (true) {
+        const packageJsonPath = path.join(dir, 'package.json');
+        if (fs.existsSync(packageJsonPath)) {
+            try {
+                const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+                const cliVersion = packageJson.simplelocalize && packageJson.simplelocalize.cliVersion;
+                if (cliVersion) {
+                    return { version: String(cliVersion), source: packageJsonPath };
+                }
+            } catch (error) {
+                // ignore unreadable package.json and keep looking
+            }
+        }
+        const parent = path.dirname(dir);
+        if (parent === dir) {
+            return null;
+        }
+        dir = parent;
+    }
 };
 
-const isBinaryInstalled = () => {
-    try {
-        const output = execSync(binaryPath + ' --version').toString().trim();
-        const expectedVersion = getExpectedCliVersion();
-        return output.includes(expectedVersion);
-    }
-    catch (error) {
-        return false;
-    }
-}
+const resolveCliVersion = (projectDir) => {
+    const fromEnv = process.env.SIMPLELOCALIZE_CLI_VERSION;
+    const resolved = fromEnv
+        ? { version: fromEnv, source: 'SIMPLELOCALIZE_CLI_VERSION' }
+        : findPinnedVersion(projectDir) || { version: require('./package.json').cliVersion, source: 'default' };
 
-const printBinaryVersion = () => {
-    try {
-        console.log(execSync(binaryPath + ' --version').toString());
+    if (!isValidVersion(resolved.version)) {
+        throw new Error(`Invalid SimpleLocalize CLI version '${resolved.version}' (from ${resolved.source}), use a full version, e.g. 2.12.0`);
     }
-    catch (error) {
-        console.error('Error running SimpleLocalize CLI');
-        process.exit(1);
-    }
-}
+    return resolved.version;
+};
 
-const buildDownloadBinaryUrl = (version) => {
-    let platform = "";
-    if (os.platform() === "win32") {
-        platform = "windows.exe"
+const getPlatformSuffix = () => {
+    const arch = os.arch() === "arm64" ? "-arm64" : "";
+    switch (os.platform()) {
+        case "win32":
+            return "windows.exe";
+        case "darwin":
+            return "mac" + arch;
+        case "linux":
+            return "linux" + arch;
+        default:
+            throw new Error(`Unsupported platform: ${os.platform()} ${os.arch()}, set SIMPLELOCALIZE_CLI_BINARY to a binary path or use the JAR`);
     }
+};
 
-    if (os.platform() === "darwin") {
-        platform = "mac"
+const getCacheDir = () => {
+    if (process.env.SIMPLELOCALIZE_CLI_CACHE_DIR) {
+        return process.env.SIMPLELOCALIZE_CLI_CACHE_DIR;
     }
+    if (os.platform() === 'win32' && process.env.LOCALAPPDATA) {
+        return path.join(process.env.LOCALAPPDATA, 'simplelocalize', 'cli');
+    }
+    const xdgCache = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+    return path.join(xdgCache, 'simplelocalize', 'cli');
+};
 
-    if (os.platform() === "linux") {
-        platform = "linux"
-    }
+const getBinaryPath = (version) => {
+    const fileName = 'simplelocalize-cli' + (os.platform() === 'win32' ? '.exe' : '');
+    return path.join(getCacheDir(), version, fileName);
+};
 
-    let arch = "";
-    if (os.arch() === "arm64") {
-        arch = "-arm64"
-    }
-    console.log(`Downloading SimpleLocalize CLI ${version} for ${platform}${arch}...`);
-    return `https://get.simplelocalize.io/binaries/${version}/simplelocalize-cli-${platform}${arch}`
-}
+async function installBinary(version, binaryPath) {
+    const downloadUrl = `https://get.simplelocalize.io/binaries/${version}/simplelocalize-cli-${getPlatformSuffix()}`;
+    console.error(`Downloading SimpleLocalize CLI ${version} from ${downloadUrl}...`);
+    fs.mkdirSync(path.dirname(binaryPath), { recursive: true });
 
-async function installBinary() {
-    const cliVersion = getExpectedCliVersion();
-    if (fs.existsSync(binaryPath)) {
-        console.log('Removing existing binary...');
-        fs.unlinkSync(binaryPath);
-    }
-    const downloadUrl = buildDownloadBinaryUrl(cliVersion);
-    if (!fs.existsSync(path.join(__dirname, 'bin'))) {
-        fs.mkdirSync(path.join(__dirname, 'bin'));
-    }
-
+    // Download to a temporary file and rename, so parallel runs never see a partial binary
+    const tempPath = `${binaryPath}.${process.pid}.tmp`;
     try {
         const response = await axios({
             url: downloadUrl,
             method: 'GET',
             responseType: 'stream'
         });
-
-        const writer = fs.createWriteStream(binaryPath);
+        const writer = fs.createWriteStream(tempPath);
         response.data.pipe(writer);
         await new Promise((resolve, reject) => {
             writer.on('finish', resolve);
             writer.on('error', reject);
+            response.data.on('error', reject);
         });
-    } catch (error) {
-        console.error('Error downloading SimpleLocalize CLI binary:', error.message);
-        process.exit(1);
-    }
-
-    // Make it executable (only on Unix-based systems)
-    if (os.platform() !== 'win32') {
-        console.log('Making binary executable...');
-        fs.chmodSync(binaryPath, 0o755);
-    }
-
-    // Ensure binary exists and is executable before continuing
-    if (!fs.existsSync(binaryPath)) {
-        throw new Error('Binary file was not created!');
-    }
-}
-
-const linkToNodeModulesBin = () => {
-    let nodeModulesBinPath = path.join(__dirname, '..', '..', '.bin', 'simplelocalize');
-
-    if (os.platform() === 'win32') {
-        nodeModulesBinPath += '.exe';
-    }
-
-    // Ensure the .bin directory exists
-    const binDir = path.dirname(nodeModulesBinPath);
-    if (!fs.existsSync(binDir)) {
-        fs.mkdirSync(binDir, { recursive: true });
-    }
-
-    if (fs.existsSync(nodeModulesBinPath)) {
-        fs.unlinkSync(nodeModulesBinPath);
-    }
-    fs.symlinkSync(binaryPath, nodeModulesBinPath);
-    console.log('Link to node_modules/.bin created.');
-}
-
-const init = async () => {
-    console.log("Checking if SimpleLocalize CLI is installed...");
-    if (!isBinaryInstalled()) {
-        console.log("SimpleLocalize CLI not installed. Installing...");
-        await installBinary();
-        if (!isBinaryInstalled()) {
-            console.error('Error installing SimpleLocalize CLI');
-            process.exit(1);
+        if (os.platform() !== 'win32') {
+            fs.chmodSync(tempPath, 0o755);
         }
-        console.log("SimpleLocalize CLI installed successfully!");
-    } else {
-        console.log("SimpleLocalize CLI already installed.");
+        fs.renameSync(tempPath, binaryPath);
+    } catch (error) {
+        fs.rmSync(tempPath, { force: true });
+        try {
+            fs.rmdirSync(path.dirname(binaryPath));
+        } catch (ignored) {
+            // not empty, another run already installed this version
+        }
+        const status = error.response && error.response.status;
+        const reason = status === 404 ? `version ${version} not found` : error.message;
+        throw new Error(`Error downloading SimpleLocalize CLI binary: ${reason}`);
     }
-    printBinaryVersion();
-    linkToNodeModulesBin();
-    process.exit(0);
 }
 
-// Only run install logic if called with 'install' argument (for postinstall)
-if (process.argv[2] === 'install') {
-    (async () => {
-        await init();
-    })();
-} else {
-    // Forward all other CLI commands to the downloaded binary
-    if (!isBinaryInstalled()) {
-        console.error('SimpleLocalize CLI binary is not installed. Please run: npm install');
+const ensureBinary = async (projectDir) => {
+    if (process.env.SIMPLELOCALIZE_CLI_BINARY) {
+        return process.env.SIMPLELOCALIZE_CLI_BINARY;
+    }
+    const version = resolveCliVersion(projectDir);
+    const binaryPath = getBinaryPath(version);
+    if (!fs.existsSync(binaryPath)) {
+        await installBinary(version, binaryPath);
+    }
+    return binaryPath;
+};
+
+const run = async () => {
+    let binaryPath;
+    try {
+        binaryPath = await ensureBinary(process.cwd());
+    } catch (error) {
+        console.error(error.message);
         process.exit(1);
     }
-    // Build the command to forward
-    const args = process.argv.slice(2).map(arg => {
-        // Quote arguments with spaces for safety
-        if (/\s/.test(arg)) return `"${arg}"`;
-        return arg;
-    }).join(' ');
-    try {
-        execSync(`${binaryPath} ${args}`, { stdio: 'inherit' });
-        process.exit(0);
-    } catch (error) {
-        process.exit(error.status || 1);
+    const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: 'inherit' });
+    if (result.error) {
+        console.error(`Error running SimpleLocalize CLI (${binaryPath}): ${result.error.message}`);
+        process.exit(1);
     }
+    if (result.signal) {
+        process.kill(process.pid, result.signal);
+    }
+    process.exit(result.status ?? 1);
+};
+
+// Optional prefetch during installation; never fails the install (the binary is downloaded on first run anyway)
+const prefetch = async () => {
+    try {
+        await ensureBinary(process.env.INIT_CWD || process.cwd());
+    } catch (error) {
+        console.warn(`${error.message}. SimpleLocalize CLI will be downloaded on first run.`);
+    }
+};
+
+if (process.argv[2] === 'install' && process.env.npm_lifecycle_event === 'postinstall') {
+    prefetch();
+} else {
+    run();
 }
